@@ -17,7 +17,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 
-        <activity android:name=".activity.MainActivity">
+        <activity android:name=".activity.PlayerActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.AudioPlayerService" />
+        <service android:name=".player.service.AudioPlayerService" />
 
     </application>
 

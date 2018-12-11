@@ -1,8 +1,7 @@
-package com.pet.simpleplayer.service.di;
+package com.pet.simpleplayer.player.di;
 
 import com.pet.simpleplayer.app.di.AppComponent;
-import com.pet.simpleplayer.service.AudioPlayerService;
-import com.pet.simpleplayer.service.AudioSessionManager;
+import com.pet.simpleplayer.player.service.AudioPlayerService;
 
 import dagger.Component;
 

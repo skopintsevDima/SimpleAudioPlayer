@@ -1,7 +1,7 @@
 package com.pet.simpleplayer.activity.di;
 
-import com.pet.simpleplayer.service.controller.PlayerController;
-import com.pet.simpleplayer.service.controller.PlayerControllerImpl;
+import com.pet.simpleplayer.player.controller.PlayerController;
+import com.pet.simpleplayer.player.controller.PlayerControllerImpl;
 
 import javax.inject.Inject;
 

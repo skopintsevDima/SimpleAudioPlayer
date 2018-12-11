@@ -1,4 +1,4 @@
-package com.pet.simpleplayer.service.di;
+package com.pet.simpleplayer.player.di;
 
 import com.pet.simpleplayer.app.App;
 

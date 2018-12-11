@@ -7,11 +7,11 @@ import android.support.v7.widget.AppCompatButton;
 import com.pet.simpleplayer.Constants;
 import com.pet.simpleplayer.R;
 import com.pet.simpleplayer.activity.di.ActivityComponentImpl;
-import com.pet.simpleplayer.service.controller.PlayerController;
+import com.pet.simpleplayer.player.controller.PlayerController;
 
 import javax.inject.Inject;
 
-public class MainActivity extends AppCompatActivity {
+public class PlayerActivity extends AppCompatActivity {
 
     private static final String KEY_PLAYER_SERVICE_STATE = "KEY_PLAYER_SERVICE_STATE";
 
@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initUI() {
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_player);
 
         mPlayBtn = findViewById(R.id.play);
         mPlayBtn.setOnClickListener(btn -> mPlayerController.play());

@@ -1,4 +1,4 @@
-package com.pet.simpleplayer.service.di;
+package com.pet.simpleplayer.player.di;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

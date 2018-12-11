@@ -1,9 +1,7 @@
-package com.pet.simpleplayer.service.di;
+package com.pet.simpleplayer.player.di;
 
-import android.app.NotificationManager;
 import android.content.Context;
 import android.media.AudioManager;
-import android.media.session.MediaSessionManager;
 import android.telephony.TelephonyManager;
 
 import javax.inject.Inject;
@@ -26,19 +24,5 @@ class ServiceModule {
     @Inject
     TelephonyManager provideTelephonyManager(Context context){
         return (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-    }
-
-    @Provides
-    @ServiceScope
-    @Inject
-    MediaSessionManager provideMediaSessionManager(Context context){
-        return (MediaSessionManager) context.getSystemService(Context.MEDIA_SESSION_SERVICE);
-    }
-
-    @Provides
-    @ServiceScope
-    @Inject
-    NotificationManager provideNotificationManager(Context context){
-        return (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
     }
 }

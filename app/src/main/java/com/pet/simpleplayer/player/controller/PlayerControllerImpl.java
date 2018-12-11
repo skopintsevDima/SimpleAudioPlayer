@@ -1,4 +1,4 @@
-package com.pet.simpleplayer.service.controller;
+package com.pet.simpleplayer.player.controller;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -9,9 +9,9 @@ import android.support.annotation.RawRes;
 import android.util.Log;
 
 import com.pet.simpleplayer.app.App;
-import com.pet.simpleplayer.service.AudioPlayerService;
+import com.pet.simpleplayer.player.service.AudioPlayerService;
 
-import static com.pet.simpleplayer.service.AudioPlayerService.*;
+import static com.pet.simpleplayer.player.service.AudioPlayerService.*;
 
 public class PlayerControllerImpl implements PlayerController {
 
@@ -50,10 +50,6 @@ public class PlayerControllerImpl implements PlayerController {
             playerIntent.putExtra(AudioPlayerService.KEY_AUDIO_RES_ID, audioFileResId);
             context.startService(playerIntent);
             context.bindService(playerIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        } else {
-            // Service is active. Send a broadcast to the service to play new audio file.
-            Intent broadcastIntent = new Intent(ACTION_PLAY_NEW_AUDIO);
-            context.sendBroadcast(broadcastIntent);
         }
     }
 

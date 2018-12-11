@@ -1,4 +1,4 @@
-package com.pet.simpleplayer.service;
+package com.pet.simpleplayer.player.service;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -14,8 +14,9 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import com.pet.simpleplayer.service.AudioSessionManager.PlaybackStatus;
-import com.pet.simpleplayer.service.di.ServiceComponentImpl;
+import com.pet.simpleplayer.Constants;
+import com.pet.simpleplayer.player.di.ServiceComponentImpl;
+import com.pet.simpleplayer.player.notification.PlayerNotification;
 
 import javax.inject.Inject;
 
@@ -33,7 +34,6 @@ public class AudioPlayerService
 
     public static final String KEY_AUDIO_RES_ID = "com.pet.simpleplayer.service.KEY_AUDIO_RES_ID";
 
-    public static final String ACTION_PLAY_NEW_AUDIO = "com.pet.simpleplayer.service.ACTION_PLAY_NEW_AUDIO";
     public static final String ACTION_PLAY = "com.pet.simpleplayer.service.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.pet.simpleplayer.service.ACTION_PAUSE";
     public static final String ACTION_RESUME = "com.pet.simpleplayer.service.ACTION_RESUME";
@@ -42,7 +42,6 @@ public class AudioPlayerService
     private final IBinder iBinder = new LocalBinder();
 
     private MediaPlayer mAudioPlayer;
-    AudioSessionManager mAudioSessionManager;
 
     @Inject
     AudioManager mAudioManager;
@@ -63,16 +62,6 @@ public class AudioPlayerService
         public void onReceive(Context context, Intent intent) {
             if (intent != null && intent.getAction() != null) {
                 switch (intent.getAction()) {
-                    case ACTION_PLAY_NEW_AUDIO:{
-                        stopAudio();
-                        mAudioPlayer.reset();
-                        initMediaPlayer();
-                        if (mAudioSessionManager == null) {
-                            mAudioSessionManager = new AudioSessionManager(AudioPlayerService.this);
-                            mAudioSessionManager.buildNotification(PlaybackStatus.PLAYING);
-                        }
-                        break;
-                    }
                     case ACTION_PLAY:{
                         playAudio();
                         break;
@@ -104,7 +93,6 @@ public class AudioPlayerService
 
     private void registerControllerReceiver() {
         IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_PLAY_NEW_AUDIO);
         filter.addAction(ACTION_PLAY);
         filter.addAction(ACTION_PAUSE);
         filter.addAction(ACTION_RESUME);
@@ -130,14 +118,8 @@ public class AudioPlayerService
             stopSelf();
         }
 
-        if (mAudioSessionManager == null) {
-            mAudioSessionManager = new AudioSessionManager(this);
-            mAudioSessionManager.initMediaSession();
-            initMediaPlayer();
-            mAudioSessionManager.buildNotification(PlaybackStatus.PAUSED);
-        }
+        initMediaPlayer();
 
-        handleIncomingActions(intent);
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -160,26 +142,13 @@ public class AudioPlayerService
         mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
     }
 
-    private void handleIncomingActions(Intent playbackAction) {
-        if (playbackAction == null || playbackAction.getAction() == null)
-            return;
-
-        String actionString = playbackAction.getAction();
-        if (actionString.equalsIgnoreCase(ACTION_PLAY)) {
-            mAudioSessionManager.play();
-        } else if (actionString.equalsIgnoreCase(ACTION_PAUSE)) {
-            mAudioSessionManager.pause();
-        } else if (actionString.equalsIgnoreCase(ACTION_STOP)) {
-            mAudioSessionManager.stop();
-        }
-    }
-
     void playAudio() {
         if (mAudioPlayer == null)
             return;
         if (!mAudioPlayer.isPlaying()) {
             mAudioPlayer.start();
         }
+        PlayerNotification.showPlayerNotification(this, Constants.AUDIO_NAME);
     }
 
     void stopAudio() {
@@ -300,11 +269,6 @@ public class AudioPlayerService
             mAudioPlayer.release();
         }
         removeAudioFocus();
-
-        if (mAudioSessionManager != null){
-            mAudioSessionManager.release();
-            mAudioSessionManager = null;
-        }
 
         if (mPhoneStateListener != null) {
             mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);

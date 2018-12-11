@@ -1,4 +1,4 @@
-package com.pet.simpleplayer.service.controller;
+package com.pet.simpleplayer.player.controller;
 
 import android.support.annotation.RawRes;
 
