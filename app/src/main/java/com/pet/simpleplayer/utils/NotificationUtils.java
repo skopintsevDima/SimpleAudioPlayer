@@ -19,6 +19,7 @@ public class NotificationUtils {
         if (notificationManager != null) {
             NotificationChannel defaultChannel = new NotificationChannel(DEFAULT_NC_CHANNEL_ID,
                     DEFAULT_NC_CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+            defaultChannel.setSound(null, null);
             notificationManager.createNotificationChannel(defaultChannel);
         }
     }

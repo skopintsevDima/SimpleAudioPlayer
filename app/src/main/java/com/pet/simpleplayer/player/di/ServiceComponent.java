@@ -9,6 +9,4 @@ import dagger.Component;
 @ServiceScope
 public interface ServiceComponent {
     void inject(AudioPlayerService playerService);
-
-    void inject(AudioSessionManager audioSessionManager);
 }

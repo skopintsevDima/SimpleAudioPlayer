@@ -14,9 +14,7 @@ import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import com.pet.simpleplayer.Constants;
 import com.pet.simpleplayer.player.di.ServiceComponentImpl;
-import com.pet.simpleplayer.player.notification.PlayerNotification;
 
 import javax.inject.Inject;
 
@@ -148,15 +146,6 @@ public class AudioPlayerService
         if (!mAudioPlayer.isPlaying()) {
             mAudioPlayer.start();
         }
-        PlayerNotification.showPlayerNotification(this, Constants.AUDIO_NAME);
-    }
-
-    void stopAudio() {
-        if (mAudioPlayer == null)
-            return;
-        if (mAudioPlayer.isPlaying()) {
-            mAudioPlayer.stop();
-        }
     }
 
     void pauseAudio() {
@@ -174,6 +163,15 @@ public class AudioPlayerService
         if (!mAudioPlayer.isPlaying()) {
             mAudioPlayer.seekTo(mResumePosition);
             mAudioPlayer.start();
+        }
+    }
+
+    void stopAudio() {
+        if (mAudioPlayer == null)
+            return;
+        if (mAudioPlayer.isPlaying()) {
+            mAudioPlayer.seekTo(0);
+            mAudioPlayer.pause();
         }
     }
 
