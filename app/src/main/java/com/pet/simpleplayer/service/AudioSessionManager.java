@@ -1,12 +1,10 @@
 package com.pet.simpleplayer.service;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.media.session.MediaSessionManager;
-import android.os.Build;
-import android.os.RemoteException;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.app.NotificationCompat.MediaStyle;
@@ -46,16 +44,15 @@ public class AudioSessionManager {
     }
 
     void initMediaSession() {
-        if (mMediaSessionManager != null)
-            return;
-
         mMediaSession = new MediaSessionCompat(mPlayerService.getApplicationContext(),
                 TAG_MEDIA_SESSION);
         mTransportControls = mMediaSession.getController().getTransportControls();
         mMediaSession.setActive(true);
         mMediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
-        setMetaData();
+        mMediaSession.setMetadata(new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, Constants.AUDIO_NAME)
+                .build());
 
         mMediaSession.setCallback(new MediaSessionCompat.Callback() {
             @Override
@@ -82,12 +79,6 @@ public class AudioSessionManager {
         });
     }
 
-    private void setMetaData() {
-        mMediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, Constants.AUDIO_NAME)
-                .build());
-    }
-
     void buildNotification(PlaybackStatus playbackStatus) {
 
         int notificationAction = android.R.drawable.ic_media_pause;
@@ -110,7 +101,9 @@ public class AudioSessionManager {
                         // Show our playback controls in the compact notification view.
                         .setShowActionsInCompactView(0, 1))
                 .setColor(mPlayerService.getResources().getColor(R.color.colorPrimary))
+                .setSmallIcon(android.R.drawable.stat_sys_headset)
                 .setContentTitle(Constants.AUDIO_NAME)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
                 // Add playback actions.
                 .addAction(notificationAction, "Play/Pause", playPauseAction);
         if (mNotificationManager != null){
@@ -153,7 +146,9 @@ public class AudioSessionManager {
 
     void release() {
         removeNotification();
+        mMediaSessionManager = null;
         mMediaSession.release();
+        mMediaSession = null;
     }
 
     public enum PlaybackStatus {

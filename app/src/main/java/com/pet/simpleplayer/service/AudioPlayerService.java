@@ -9,14 +9,13 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.RawRes;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.pet.simpleplayer.service.AudioSessionManager.PlaybackStatus;
 import com.pet.simpleplayer.service.di.ServiceComponentImpl;
-
-import java.io.IOException;
 
 import javax.inject.Inject;
 
@@ -25,7 +24,6 @@ public class AudioPlayerService
 
         implements
         MediaPlayer.OnCompletionListener,
-        MediaPlayer.OnPreparedListener,
         MediaPlayer.OnErrorListener,
         MediaPlayer.OnInfoListener,
 
@@ -33,7 +31,7 @@ public class AudioPlayerService
 
     private static final String TAG = AudioPlayerService.class.getSimpleName();
 
-    public static final String KEY_AUDIO_PATH = "com.pet.simpleplayer.service.KEY_AUDIO_PATH";
+    public static final String KEY_AUDIO_RES_ID = "com.pet.simpleplayer.service.KEY_AUDIO_RES_ID";
 
     public static final String ACTION_PLAY_NEW_AUDIO = "com.pet.simpleplayer.service.ACTION_PLAY_NEW_AUDIO";
     public static final String ACTION_PLAY = "com.pet.simpleplayer.service.ACTION_PLAY";
@@ -49,7 +47,8 @@ public class AudioPlayerService
     @Inject
     AudioManager mAudioManager;
 
-    private String mAudioFilePath;
+    @RawRes
+    private int mAudioFileResId;
     private int mResumePosition;
 
     //Handle incoming phone calls
@@ -59,44 +58,39 @@ public class AudioPlayerService
     @Inject
     TelephonyManager mTelephonyManager;
 
-    private BroadcastReceiver mPlayNewAudioReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mControllerReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            stopAudio();
-            mAudioPlayer.reset();
-            initMediaPlayer();
-            if (mAudioSessionManager == null) {
-                mAudioSessionManager = new AudioSessionManager(AudioPlayerService.this);
-                mAudioSessionManager.buildNotification(PlaybackStatus.PLAYING);
+            if (intent != null && intent.getAction() != null) {
+                switch (intent.getAction()) {
+                    case ACTION_PLAY_NEW_AUDIO:{
+                        stopAudio();
+                        mAudioPlayer.reset();
+                        initMediaPlayer();
+                        if (mAudioSessionManager == null) {
+                            mAudioSessionManager = new AudioSessionManager(AudioPlayerService.this);
+                            mAudioSessionManager.buildNotification(PlaybackStatus.PLAYING);
+                        }
+                        break;
+                    }
+                    case ACTION_PLAY:{
+                        playAudio();
+                        break;
+                    }
+                    case ACTION_PAUSE:{
+                        pauseAudio();
+                        break;
+                    }
+                    case ACTION_RESUME:{
+                        resumeAudio();
+                        break;
+                    }
+                    case ACTION_STOP:{
+                        stopAudio();
+                        break;
+                    }
+                }
             }
-        }
-    };
-
-    private BroadcastReceiver mPlayCommandReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            playAudio();
-        }
-    };
-
-    private BroadcastReceiver mPauseCommandReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            pauseAudio();
-        }
-    };
-
-    private BroadcastReceiver mResumeCommandReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            resumeAudio();
-        }
-    };
-
-    private BroadcastReceiver mStopCommandReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            stopAudio();
         }
     };
 
@@ -105,36 +99,17 @@ public class AudioPlayerService
         super.onCreate();
         ServiceComponentImpl.buildComponent().inject(this);
         initCallStateListener();
-        registerPlayNewAudioReceiver();
-        registerPlayReceiver();
-        registerPauseReceiver();
-        registerResumeReceiver();
-        registerStopReceiver();
+        registerControllerReceiver();
     }
 
-    private void registerPlayNewAudioReceiver() {
-        IntentFilter filter = new IntentFilter(ACTION_PLAY_NEW_AUDIO);
-        registerReceiver(mPlayNewAudioReceiver, filter);
-    }
-
-    private void registerPlayReceiver() {
-        IntentFilter filter = new IntentFilter(ACTION_PLAY);
-        registerReceiver(mPlayNewAudioReceiver, filter);
-    }
-
-    private void registerPauseReceiver() {
-        IntentFilter filter = new IntentFilter(ACTION_PAUSE);
-        registerReceiver(mPlayNewAudioReceiver, filter);
-    }
-
-    private void registerResumeReceiver() {
-        IntentFilter filter = new IntentFilter(ACTION_RESUME);
-        registerReceiver(mPlayNewAudioReceiver, filter);
-    }
-
-    private void registerStopReceiver() {
-        IntentFilter filter = new IntentFilter(ACTION_STOP);
-        registerReceiver(mPlayNewAudioReceiver, filter);
+    private void registerControllerReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_PLAY_NEW_AUDIO);
+        filter.addAction(ACTION_PLAY);
+        filter.addAction(ACTION_PAUSE);
+        filter.addAction(ACTION_RESUME);
+        filter.addAction(ACTION_STOP);
+        registerReceiver(mControllerReceiver, filter);
     }
 
     @Override
@@ -145,7 +120,7 @@ public class AudioPlayerService
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            mAudioFilePath = intent.getExtras().getString(KEY_AUDIO_PATH);
+            mAudioFileResId = intent.getExtras().getInt(KEY_AUDIO_RES_ID);
         } catch (NullPointerException e) {
             // Stop Service, if audio file path was not provided.
             stopSelf();
@@ -159,7 +134,7 @@ public class AudioPlayerService
             mAudioSessionManager = new AudioSessionManager(this);
             mAudioSessionManager.initMediaSession();
             initMediaPlayer();
-            mAudioSessionManager.buildNotification(PlaybackStatus.PLAYING);
+            mAudioSessionManager.buildNotification(PlaybackStatus.PAUSED);
         }
 
         handleIncomingActions(intent);
@@ -176,24 +151,13 @@ public class AudioPlayerService
     }
 
     private void initMediaPlayer() {
-        mAudioPlayer = new MediaPlayer();
+        mAudioPlayer = MediaPlayer.create(this, mAudioFileResId);
 
         mAudioPlayer.setOnCompletionListener(this);
         mAudioPlayer.setOnErrorListener(this);
-        mAudioPlayer.setOnPreparedListener(this);
         mAudioPlayer.setOnInfoListener(this);
 
-        mAudioPlayer.reset();
-
         mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        try {
-            mAudioPlayer.setDataSource(mAudioFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            stopSelf();
-        }
-
-        mAudioPlayer.prepareAsync();
     }
 
     private void handleIncomingActions(Intent playbackAction) {
@@ -242,11 +206,6 @@ public class AudioPlayerService
             mAudioPlayer.seekTo(mResumePosition);
             mAudioPlayer.start();
         }
-    }
-
-    @Override
-    public void onPrepared(MediaPlayer mp) {
-        playAudio();
     }
 
     @Override
@@ -351,11 +310,7 @@ public class AudioPlayerService
             mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
         }
 
-        unregisterReceiver(mPlayNewAudioReceiver);
-        unregisterReceiver(mPlayCommandReceiver);
-        unregisterReceiver(mPauseCommandReceiver);
-        unregisterReceiver(mResumeCommandReceiver);
-        unregisterReceiver(mStopCommandReceiver);
+        unregisterReceiver(mControllerReceiver);
     }
 
     private void removeAudioFocus() {

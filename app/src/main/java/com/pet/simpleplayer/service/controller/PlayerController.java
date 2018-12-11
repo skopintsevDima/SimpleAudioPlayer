@@ -1,11 +1,13 @@
-package com.pet.simpleplayer.service.interactor;
+package com.pet.simpleplayer.service.controller;
 
-public interface PlayerInteractor {
+import android.support.annotation.RawRes;
+
+public interface PlayerController {
     boolean isServiceBound();
 
     void setServiceState(boolean serviceBound);
 
-    void init(String audioFilePath);
+    void init(@RawRes int audioFileName);
 
     void play();
 

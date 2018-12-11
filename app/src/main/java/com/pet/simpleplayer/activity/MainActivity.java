@@ -4,9 +4,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.AppCompatButton;
 
+import com.pet.simpleplayer.Constants;
 import com.pet.simpleplayer.R;
 import com.pet.simpleplayer.activity.di.ActivityComponentImpl;
-import com.pet.simpleplayer.service.interactor.PlayerInteractor;
+import com.pet.simpleplayer.service.controller.PlayerController;
 
 import javax.inject.Inject;
 
@@ -15,7 +16,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_PLAYER_SERVICE_STATE = "KEY_PLAYER_SERVICE_STATE";
 
     @Inject
-    PlayerInteractor mPlayerInteractor;
+    PlayerController mPlayerController;
 
     private AppCompatButton mPlayBtn;
     private AppCompatButton mPauseBtn;
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActivityComponentImpl.buildComponent().inject(this);
+        mPlayerController.init(Constants.AUDIO_FILE_RES_ID);
         initUI();
     }
 
@@ -33,21 +35,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mPlayBtn = findViewById(R.id.play);
-        mPlayBtn.setOnClickListener(btn -> mPlayerInteractor.play());
+        mPlayBtn.setOnClickListener(btn -> mPlayerController.play());
 
         mPauseBtn = findViewById(R.id.pause);
-        mPlayBtn.setOnClickListener(btn -> mPlayerInteractor.pause());
+        mPauseBtn.setOnClickListener(btn -> mPlayerController.pause());
 
         mResumeBtn = findViewById(R.id.resume);
-        mPlayBtn.setOnClickListener(btn -> mPlayerInteractor.resume());
+        mResumeBtn.setOnClickListener(btn -> mPlayerController.resume());
 
         mStopBtn = findViewById(R.id.stop);
-        mPlayBtn.setOnClickListener(btn -> mPlayerInteractor.stop());
+        mStopBtn.setOnClickListener(btn -> mPlayerController.stop());
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putBoolean(KEY_PLAYER_SERVICE_STATE, mPlayerInteractor.isServiceBound());
+        savedInstanceState.putBoolean(KEY_PLAYER_SERVICE_STATE, mPlayerController.isServiceBound());
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -55,13 +57,13 @@ public class MainActivity extends AppCompatActivity {
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         boolean serviceBound = savedInstanceState.getBoolean(KEY_PLAYER_SERVICE_STATE);
-        mPlayerInteractor.setServiceState(serviceBound);
+        mPlayerController.setServiceState(serviceBound);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPlayerInteractor.releasePlayer();
-        mPlayerInteractor = null;
+        mPlayerController.releasePlayer();
+        mPlayerController = null;
     }
 }

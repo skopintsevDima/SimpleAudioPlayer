@@ -1,7 +1,7 @@
 package com.pet.simpleplayer.activity.di;
 
-import com.pet.simpleplayer.service.interactor.PlayerInteractor;
-import com.pet.simpleplayer.service.interactor.PlayerInteractorImpl;
+import com.pet.simpleplayer.service.controller.PlayerController;
+import com.pet.simpleplayer.service.controller.PlayerControllerImpl;
 
 import javax.inject.Inject;
 
@@ -11,16 +11,16 @@ import dagger.Provides;
 @Module
 class ActivityModule {
 
-    private PlayerInteractor mPlayerInteractor;
+    private PlayerController mPlayerController;
 
     ActivityModule(){
-        mPlayerInteractor = new PlayerInteractorImpl();
+        mPlayerController = new PlayerControllerImpl();
     }
 
     @Provides
     @ActivityScope
     @Inject
-    PlayerInteractor providePlayerInteractor(){
-        return mPlayerInteractor;
+    PlayerController providePlayerInteractor(){
+        return mPlayerController;
     }
 }

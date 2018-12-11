@@ -1,22 +1,21 @@
-package com.pet.simpleplayer.service.interactor;
+package com.pet.simpleplayer.service.controller;
 
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.support.annotation.RawRes;
 import android.util.Log;
 
 import com.pet.simpleplayer.app.App;
 import com.pet.simpleplayer.service.AudioPlayerService;
 
-import javax.inject.Inject;
-
 import static com.pet.simpleplayer.service.AudioPlayerService.*;
 
-public class PlayerInteractorImpl implements PlayerInteractor {
+public class PlayerControllerImpl implements PlayerController {
 
-    private static final String TAG = PlayerInteractorImpl.class.getSimpleName();
+    private static final String TAG = PlayerControllerImpl.class.getSimpleName();
 
     private AudioPlayerService mPlayerService;
 
@@ -44,11 +43,11 @@ public class PlayerInteractorImpl implements PlayerInteractor {
     }
 
     @Override
-    public void init(String audioFilePath) {
+    public void init(@RawRes int audioFileResId) {
         Context context = App.getAppComponent().context();
         if (!mServiceBound) {
             Intent playerIntent = new Intent(context, AudioPlayerService.class);
-            playerIntent.putExtra(AudioPlayerService.KEY_AUDIO_PATH, audioFilePath);
+            playerIntent.putExtra(AudioPlayerService.KEY_AUDIO_RES_ID, audioFileResId);
             context.startService(playerIntent);
             context.bindService(playerIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
         } else {

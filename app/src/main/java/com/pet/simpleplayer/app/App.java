@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.pet.simpleplayer.app.di.AppComponent;
 import com.pet.simpleplayer.app.di.AppModule;
+import com.pet.simpleplayer.app.di.DaggerAppComponent;
 
 public class App extends Application {
 
