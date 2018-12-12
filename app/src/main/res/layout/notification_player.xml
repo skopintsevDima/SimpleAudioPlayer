@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="64dp">
+    android:layout_height="64dp"
+    android:background="@color/colorPrimary">
 
     <TextView
         android:id="@+id/audioName"
@@ -11,22 +12,38 @@
         android:layout_height="wrap_content"
         tools:text="Audio name"
         android:textAlignment="center"
-        android:textColor="@color/colorAccent"/>
+        android:textColor="@android:color/white"/>
 
-    <Button
+    <ImageButton
         android:id="@+id/play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/play"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"/>
+        android:layout_marginBottom="@dimen/margin_small"
+        android:src="@android:drawable/ic_media_play"
+        android:background="@android:color/transparent"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"/>
 
-    <Button
+    <ImageButton
+        android:id="@+id/stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="@dimen/margin_medium"
+        android:src="@drawable/ic_stop_white_28dp"
+        android:background="@android:color/transparent"
+        android:layout_alignParentBottom="true"
+        android:layout_toStartOf="@+id/play"/>
+
+    <ImageButton
         android:id="@+id/pause"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/pause"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"/>
+        android:layout_marginBottom="@dimen/margin_small"
+        android:layout_marginStart="@dimen/margin_medium"
+        android:src="@android:drawable/ic_media_pause"
+        android:background="@android:color/transparent"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/play"/>
 
 </RelativeLayout>

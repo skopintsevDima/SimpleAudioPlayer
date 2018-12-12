@@ -2,20 +2,18 @@ package com.pet.simpleplayer.player.controller;
 
 import android.support.annotation.RawRes;
 
+import com.pet.simpleplayer.player.PlayerState;
+
+import io.reactivex.subjects.Subject;
+
 public interface PlayerController {
-    boolean isServiceBound();
-
-    void setServiceState(boolean serviceBound);
-
     void init(@RawRes int audioFileName);
 
-    void play();
+    Subject<PlayerState> getPlayerState();
 
-    void pause();
-
-    void resume();
+    void togglePlayPause();
 
     void stop();
 
-    void releasePlayer();
+    void setPlayerScreenState(boolean alive);
 }

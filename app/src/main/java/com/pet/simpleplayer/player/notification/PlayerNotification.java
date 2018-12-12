@@ -15,13 +15,13 @@ import com.pet.simpleplayer.activity.PlayerActivity;
 import com.pet.simpleplayer.app.App;
 import com.pet.simpleplayer.utils.NotificationUtils;
 
-import static android.app.NotificationChannel.DEFAULT_CHANNEL_ID;
 import static com.pet.simpleplayer.player.service.AudioPlayerService.*;
 import static com.pet.simpleplayer.utils.NotificationUtils.DEFAULT_NC_CHANNEL_ID;
 
 public class PlayerNotification {
 
     private static final int NOTIFICATION_ID = 201;
+    public static final String ACTION_CLOSE_PLAYER = "ACTION_CLOSE_PLAYER";
 
     private static Notification sPlayerNotification;
 
@@ -31,6 +31,7 @@ public class PlayerNotification {
         if (sPlayerNotification == null) {
             RemoteViews notificationView = new RemoteViews(context.getPackageName(),
                     R.layout.notification_player);
+            notificationView.setTextViewText(R.id.audioName, audioName);
             initUI(notificationView, context);
 
             NotificationCompat.Builder notificationBuilder;
@@ -43,15 +44,19 @@ public class PlayerNotification {
 
             Intent notifyIntent = new Intent(context, PlayerActivity.class);
             notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-            PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
+            PendingIntent notifyPendingIntent = PendingIntent.getActivity(context, 0,
                     notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-            notificationBuilder.setContentIntent(pendingIntent);
+            Intent deleteIntent = new Intent(ACTION_CLOSE_PLAYER);
+            PendingIntent deletePendingIntent = PendingIntent.getBroadcast(context, 0,
+                    deleteIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            notificationBuilder.setContentIntent(notifyPendingIntent);
             notificationBuilder.setSmallIcon(android.R.drawable.ic_media_play);
             notificationBuilder.setAutoCancel(true);
+            notificationBuilder.setDeleteIntent(deletePendingIntent);
             notificationBuilder.setCustomBigContentView(notificationView);
-            notificationBuilder.setContentTitle(context.getString(R.string.app_name));
-            notificationBuilder.setContentText(context.getString(R.string.player));
+            notificationBuilder.setOngoing(true);
 
             sPlayerNotification = notificationBuilder.build();
         }
@@ -68,6 +73,11 @@ public class PlayerNotification {
         PendingIntent pausePendingIntent = PendingIntent.getBroadcast(context, 0,
                 pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         notificationView.setOnClickPendingIntent(R.id.pause, pausePendingIntent);
+
+        Intent stopIntent = new Intent(ACTION_STOP);
+        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(context, 0,
+                stopIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        notificationView.setOnClickPendingIntent(R.id.stop, stopPendingIntent);
     }
 
     public static void hidePlayerNotification(){

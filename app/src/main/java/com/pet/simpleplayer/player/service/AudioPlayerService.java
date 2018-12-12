@@ -15,6 +15,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.pet.simpleplayer.player.di.ServiceComponentImpl;
+import com.pet.simpleplayer.player.notification.PlayerNotification;
 
 import javax.inject.Inject;
 
@@ -34,7 +35,6 @@ public class AudioPlayerService
 
     public static final String ACTION_PLAY = "com.pet.simpleplayer.service.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.pet.simpleplayer.service.ACTION_PAUSE";
-    public static final String ACTION_RESUME = "com.pet.simpleplayer.service.ACTION_RESUME";
     public static final String ACTION_STOP = "com.pet.simpleplayer.service.ACTION_STOP";
 
     private final IBinder iBinder = new LocalBinder();
@@ -46,7 +46,6 @@ public class AudioPlayerService
 
     @RawRes
     private int mAudioFileResId;
-    private int mResumePosition;
 
     //Handle incoming phone calls
     private boolean mOngoingCall = false;
@@ -55,47 +54,11 @@ public class AudioPlayerService
     @Inject
     TelephonyManager mTelephonyManager;
 
-    private BroadcastReceiver mControllerReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && intent.getAction() != null) {
-                switch (intent.getAction()) {
-                    case ACTION_PLAY:{
-                        playAudio();
-                        break;
-                    }
-                    case ACTION_PAUSE:{
-                        pauseAudio();
-                        break;
-                    }
-                    case ACTION_RESUME:{
-                        resumeAudio();
-                        break;
-                    }
-                    case ACTION_STOP:{
-                        stopAudio();
-                        break;
-                    }
-                }
-            }
-        }
-    };
-
     @Override
     public void onCreate() {
         super.onCreate();
         ServiceComponentImpl.buildComponent().inject(this);
         initCallStateListener();
-        registerControllerReceiver();
-    }
-
-    private void registerControllerReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_PLAY);
-        filter.addAction(ACTION_PAUSE);
-        filter.addAction(ACTION_RESUME);
-        filter.addAction(ACTION_STOP);
-        registerReceiver(mControllerReceiver, filter);
     }
 
     @Override
@@ -131,16 +94,21 @@ public class AudioPlayerService
     }
 
     private void initMediaPlayer() {
-        mAudioPlayer = MediaPlayer.create(this, mAudioFileResId);
+        try {
+            mAudioPlayer = MediaPlayer.create(this, mAudioFileResId);
 
-        mAudioPlayer.setOnCompletionListener(this);
-        mAudioPlayer.setOnErrorListener(this);
-        mAudioPlayer.setOnInfoListener(this);
+            mAudioPlayer.setOnCompletionListener(this);
+            mAudioPlayer.setOnErrorListener(this);
+            mAudioPlayer.setOnInfoListener(this);
 
-        mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mAudioPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        } catch (Exception e){
+            e.printStackTrace();
+            stopSelf();
+        }
     }
 
-    void playAudio() {
+    public void playAudio() {
         if (mAudioPlayer == null)
             return;
         if (!mAudioPlayer.isPlaying()) {
@@ -148,25 +116,15 @@ public class AudioPlayerService
         }
     }
 
-    void pauseAudio() {
+    public void pauseAudio() {
         if (mAudioPlayer == null)
             return;
         if (mAudioPlayer.isPlaying()) {
             mAudioPlayer.pause();
-            mResumePosition = mAudioPlayer.getCurrentPosition();
         }
     }
 
-    void resumeAudio() {
-        if (mAudioPlayer == null)
-            return;
-        if (!mAudioPlayer.isPlaying()) {
-            mAudioPlayer.seekTo(mResumePosition);
-            mAudioPlayer.start();
-        }
-    }
-
-    void stopAudio() {
+    public void stopAudio() {
         if (mAudioPlayer == null)
             return;
         if (mAudioPlayer.isPlaying()) {
@@ -221,7 +179,7 @@ public class AudioPlayerService
                         if (mAudioPlayer != null) {
                             if (mOngoingCall) {
                                 mOngoingCall = false;
-                                resumeAudio();
+                                playAudio();
                             }
                         }
                         break;
@@ -271,8 +229,7 @@ public class AudioPlayerService
         if (mPhoneStateListener != null) {
             mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
         }
-
-        unregisterReceiver(mControllerReceiver);
+        PlayerNotification.hidePlayerNotification();
     }
 
     private void removeAudioFocus() {

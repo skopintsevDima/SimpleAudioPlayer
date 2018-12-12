@@ -7,10 +7,13 @@ public class ActivityComponentImpl {
     private static ActivityComponent sComponent;
 
     public static ActivityComponent buildComponent(){
-        return sComponent = DaggerActivityComponent.builder()
-                .appComponent(App.getAppComponent())
-                .activityModule(new ActivityModule())
-                .build();
+        if (sComponent == null) {
+            sComponent = DaggerActivityComponent.builder()
+                    .appComponent(App.getAppComponent())
+                    .activityModule(new ActivityModule())
+                    .build();
+        }
+        return sComponent;
     }
 
     public static ActivityComponent get() throws IllegalStateException{

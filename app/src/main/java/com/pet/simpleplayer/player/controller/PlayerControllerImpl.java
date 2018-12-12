@@ -1,16 +1,27 @@
 package com.pet.simpleplayer.player.controller;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.support.annotation.RawRes;
 import android.util.Log;
 
+import com.pet.simpleplayer.Constants;
 import com.pet.simpleplayer.app.App;
+import com.pet.simpleplayer.player.PlayerState;
+import com.pet.simpleplayer.player.notification.PlayerNotification;
 import com.pet.simpleplayer.player.service.AudioPlayerService;
 
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
+
+import static com.pet.simpleplayer.player.notification.PlayerNotification.ACTION_CLOSE_PLAYER;
 import static com.pet.simpleplayer.player.service.AudioPlayerService.*;
 
 public class PlayerControllerImpl implements PlayerController {
@@ -20,6 +31,13 @@ public class PlayerControllerImpl implements PlayerController {
     private AudioPlayerService mPlayerService;
 
     private boolean mServiceBound = false;
+    private boolean mPlayerScreenAlive = false;
+    private boolean mIsPlaying = false;
+    private boolean mIsStopped = true;
+    private Disposable mPlayerStateSubscription;
+    private PlayerState mCurrentPlayerState;
+
+    private Subject<PlayerState> mPlayerStateSubject = PublishSubject.create();
 
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
@@ -28,18 +46,54 @@ public class PlayerControllerImpl implements PlayerController {
             mPlayerService = binder.getService();
             mServiceBound = true;
             Log.d(TAG, "PLAYER SERVICE CONNECTED!");
+            registerControllerReceiver();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mServiceBound = false;
             Log.d(TAG, "PLAYER SERVICE DISCONNECTED!");
+            mPlayerService.unregisterReceiver(mControllerReceiver);
         }
     };
 
-    @Override
-    public void setServiceState(boolean serviceBound){
-        mServiceBound = serviceBound;
+    private BroadcastReceiver mControllerReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null && intent.getAction() != null) {
+                switch (intent.getAction()) {
+                    case ACTION_PLAY:{
+                        if (!mIsPlaying)
+                            togglePlayPause();
+                        break;
+                    }
+                    case ACTION_PAUSE:{
+                        if (mIsPlaying)
+                            togglePlayPause();
+                        break;
+                    }
+                    case ACTION_STOP:{
+                        stop();
+                        break;
+                    }
+                    case ACTION_CLOSE_PLAYER:{
+                        if (!mPlayerScreenAlive){
+                            releasePlayer();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    };
+
+    private void registerControllerReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_PLAY);
+        filter.addAction(ACTION_PAUSE);
+        filter.addAction(ACTION_STOP);
+        filter.addAction(ACTION_CLOSE_PLAYER);
+        mPlayerService.registerReceiver(mControllerReceiver, filter);
     }
 
     @Override
@@ -49,49 +103,78 @@ public class PlayerControllerImpl implements PlayerController {
             Intent playerIntent = new Intent(context, AudioPlayerService.class);
             playerIntent.putExtra(AudioPlayerService.KEY_AUDIO_RES_ID, audioFileResId);
             context.startService(playerIntent);
-            context.bindService(playerIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+            context.bindService(playerIntent, mServiceConnection, Context.BIND_IMPORTANT);
+            mCurrentPlayerState = PlayerState.STOPPED;
+            mPlayerStateSubscription = mPlayerStateSubject.subscribe(playerState -> {
+                mCurrentPlayerState = playerState;
+                switch (playerState){
+                    case PLAYING:{
+                        if (mIsStopped){
+                            PlayerNotification.showPlayerNotification(context, Constants.AUDIO_NAME);
+                            mIsStopped = false;
+                        }
+                        mIsPlaying = true;
+                        break;
+                    }
+                    case PAUSED:{
+                        mIsPlaying = false;
+                        break;
+                    }
+                    case STOPPED:{
+                        PlayerNotification.hidePlayerNotification();
+                        mIsStopped = true;
+                        mIsPlaying = false;
+                        break;
+                    }
+                }
+            });
         }
+        mPlayerStateSubject.onNext(mCurrentPlayerState);
     }
 
     @Override
-    public boolean isServiceBound(){
-        return mServiceBound;
+    public Subject<PlayerState> getPlayerState() {
+        return mPlayerStateSubject;
     }
 
     @Override
-    public void play() {
-        Context context = App.getAppComponent().context();
-        Intent broadcastIntent = new Intent(ACTION_PLAY);
-        context.sendBroadcast(broadcastIntent);
-    }
-
-    @Override
-    public void pause() {
-        Context context = App.getAppComponent().context();
-        Intent broadcastIntent = new Intent(ACTION_PAUSE);
-        context.sendBroadcast(broadcastIntent);
-    }
-
-    @Override
-    public void resume() {
-        Context context = App.getAppComponent().context();
-        Intent broadcastIntent = new Intent(ACTION_RESUME);
-        context.sendBroadcast(broadcastIntent);
+    public void togglePlayPause() {
+        if (mPlayerService != null) {
+            if (mIsPlaying) {
+                mPlayerService.pauseAudio();
+                mPlayerStateSubject.onNext(PlayerState.PAUSED);
+            } else {
+                mPlayerService.playAudio();
+                mPlayerStateSubject.onNext(PlayerState.PLAYING);
+            }
+        }
     }
 
     @Override
     public void stop() {
-        Context context = App.getAppComponent().context();
-        Intent broadcastIntent = new Intent(ACTION_STOP);
-        context.sendBroadcast(broadcastIntent);
+        if (mPlayerService != null) {
+            mPlayerService.stopAudio();
+            mPlayerStateSubject.onNext(PlayerState.STOPPED);
+        }
     }
 
     @Override
-    public void releasePlayer() {
+    public void setPlayerScreenState(boolean alive) {
+        mPlayerScreenAlive = alive;
+    }
+
+    private void releasePlayer() {
         Context context = App.getAppComponent().context();
         if (mServiceBound) {
             context.unbindService(mServiceConnection);
             mPlayerService.stopSelf();
+            mServiceBound = false;
         }
+        if (mPlayerStateSubscription != null && !mPlayerStateSubscription.isDisposed()) {
+            mPlayerStateSubscription.dispose();
+        }
+        mIsPlaying = false;
+        mIsStopped = true;
+        mCurrentPlayerState = PlayerState.STOPPED;
     }
 }
