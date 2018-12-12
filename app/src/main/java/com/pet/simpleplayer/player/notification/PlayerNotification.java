@@ -30,9 +30,14 @@ public class PlayerNotification {
                 (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
         if (sPlayerNotification == null) {
             RemoteViews notificationView = new RemoteViews(context.getPackageName(),
-                    R.layout.notification_player);
+                    R.layout.notification_player_small);
             notificationView.setTextViewText(R.id.audioName, audioName);
             initUI(notificationView, context);
+
+            RemoteViews notificationViewExpanded = new RemoteViews(context.getPackageName(),
+                    R.layout.notification_player_big);
+            notificationViewExpanded.setTextViewText(R.id.audioName, audioName);
+            initUI(notificationViewExpanded, context);
 
             NotificationCompat.Builder notificationBuilder;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -55,7 +60,8 @@ public class PlayerNotification {
             notificationBuilder.setSmallIcon(android.R.drawable.ic_media_play);
             notificationBuilder.setAutoCancel(true);
             notificationBuilder.setDeleteIntent(deletePendingIntent);
-            notificationBuilder.setCustomBigContentView(notificationView);
+            notificationBuilder.setCustomContentView(notificationView);
+            notificationBuilder.setCustomBigContentView(notificationViewExpanded);
             notificationBuilder.setOngoing(true);
 
             sPlayerNotification = notificationBuilder.build();
